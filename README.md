@@ -52,6 +52,10 @@ The system is integrated with GitHub Actions, which automatically runs tests on 
 To use this in your own GitHub repository:
 1. Add the workflow file and Claude error parser script
 2. Add your Claude API key as a GitHub secret named `CLAUDE_API_KEY`
+3. For commit access, create a Personal Access Token (PAT) with `repo` scope:
+   - Go to GitHub Settings > Developer settings > Personal access tokens
+   - Create a new token with the "repo" scope
+   - Add this token as a GitHub secret named `GH_PAT`
 
 ## Contributing
 
