@@ -22,8 +22,3 @@ git config --global user.name "$username"
 read -p "Enter your email for Git commits: " email
 git config --global user.email "$email"
 
-echo
-echo "✅ GitHub credentials successfully configured!"
-echo "To push to GitHub, use:"
-echo "  git remote add origin https://github.com/$username/PromptPlace3.git"
-echo "  git push -u origin master"
