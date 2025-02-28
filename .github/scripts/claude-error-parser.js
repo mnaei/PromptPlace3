@@ -28,13 +28,13 @@ function readErrorOutput() {
 function parseErrors(output) {
   const fileErrorMap = {};
   
-  // Extract file paths from error messages
-  const filePathRegex = /(?:Error|Exception).*?(\/.+\.[jt]sx?):(\d+)/g;
+  // Extract file paths from error messages - improved regex to catch more error formats
+  const filePathRegex = /(?:\/[^:]+\/[^:]+\.[jt]sx?):(\d+)(?::(\d+))?/g;
   let match;
   
   while ((match = filePathRegex.exec(output)) !== null) {
-    const filePath = match[1];
-    const line = parseInt(match[2], 10);
+    const filePath = match[0].split(':')[0]; // Extract just the file path part
+    const line = parseInt(match[1], 10);
     
     if (!fileErrorMap[filePath]) {
       fileErrorMap[filePath] = {
@@ -47,16 +47,28 @@ function parseErrors(output) {
     }
   }
   
+  // If no files found, check if there's a syntax error that didn't match our regex
+  if (Object.keys(fileErrorMap).length === 0 && output.includes('SyntaxError')) {
+    // Try to extract file path from stack trace
+    const stackMatch = output.match(/at\s+.+\s+\((.+\.js):(\d+):(\d+)\)/);
+    if (stackMatch && stackMatch[1]) {
+      const filePath = stackMatch[1];
+      const line = parseInt(stackMatch[2], 10);
+      
+      fileErrorMap[filePath] = {
+        filePath,
+        errorLines: new Set([line]),
+        errorText: [output.split('\n').slice(0, 10).join('\n')] // Take the first 10 lines of error
+      };
+    }
+  }
+  
   // For each file with errors, extract relevant error messages
   Object.keys(fileErrorMap).forEach(filePath => {
-    const fileErrors = [];
-    const fileRegex = new RegExp(`(?:Error|Exception).*?${escapeRegExp(filePath)}[^\\n]*\\n(?:\\s+at[^\\n]*\\n)*`, 'g');
-    
-    while ((match = fileRegex.exec(output)) !== null) {
-      fileErrors.push(match[0]);
+    if (fileErrorMap[filePath].errorText.length === 0) {
+      // Simple approach: just capture all the error output
+      fileErrorMap[filePath].errorText = [output];
     }
-    
-    fileErrorMap[filePath].errorText = fileErrors;
   });
   
   return Object.values(fileErrorMap);

@@ -3,16 +3,23 @@
  */
 
 // Missing semicolon and incorrectly accessing property on null
-const config = null
-const apiEndpoint = config.endpoint + '/api'
+const config = null;
+let apiEndpoint = '/api'; // Fixed null reference
+
+// Add missing dataProcessor
+const dataProcessor = {
+  transform: function(data) {
+    return data;
+  }
+};
 
 // Accessing property on undefined variable
 function processData(data) {
   return dataProcessor.transform(data);
 }
 
-// Syntax error: missing closing parenthesis
-function calculateTotal(a, b, c {
+// Syntax error: fixed missing closing parenthesis
+function calculateTotal(a, b, c) {
   return a + b + c;
 }
 
@@ -26,8 +33,8 @@ function findMax() {
     }
   }
   
-  // Variable from inside another scope
-  return maxValue;
+  // Fixed variable scope issue
+  return max;
 }
 
 // Export the functions
