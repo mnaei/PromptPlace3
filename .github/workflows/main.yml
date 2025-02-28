@@ -1,0 +1,42 @@
+name: Auto-Fix Workflow
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Run tests and capture errors
+        id: run_tests
+        run: |
+          # Run tests and capture output
+          OUTPUT=$(npm test 2>&1) || {
+            echo "::set-output name=has_errors::true"
+            echo "$OUTPUT" > error_output.txt
+          }
+          
+      - name: Parse errors and fix code
+        if: steps.run_tests.outputs.has_errors == 'true'
+        run: |
+          # Run the error parser script
+          node .github/scripts/error-parser.js
+          
+      - name: Commit fixes if any changes were made
+        if: steps.run_tests.outputs.has_errors == 'true'
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add .
+          git diff --staged --quiet || {
+            git commit -m "Auto-fix: Resolved issues from failed tests"
+            git push
+          }
