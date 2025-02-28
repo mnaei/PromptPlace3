@@ -1,16 +1,19 @@
 {
   "name": "prompt-place-3",
   "version": "1.0.0",
-  "description": "A repository with GitHub Pages and automated error fixing",
+  "description": "A repository with GitHub Pages and Claude-powered error fixing",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/**/*.test.js",
     "create-error": "node src/buggy-code.js > output.log 2>&1 || echo 'Error detected' && cp output.log error_output.txt",
-    "fix-errors": "node .github/scripts/error-parser.js"
+    "fix-errors": "node .github/scripts/error-parser.js",
+    "fix-errors-claude": "node .github/scripts/claude-error-parser.js"
   },
   "keywords": [
     "github-pages",
     "auto-fix",
+    "claude",
+    "ai",
     "error-handling"
   ],
   "author": "",

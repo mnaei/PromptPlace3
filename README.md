@@ -1,24 +1,25 @@
 # PromptPlace3
 
-This repository demonstrates automated error detection and fixing in JavaScript code using GitHub Actions.
+This repository demonstrates AI-powered error detection and fixing in JavaScript code using GitHub Actions and Claude.
 
 ## Features
 
 - **GitHub Pages** - The site is accessible at [https://mnaei.github.io/PromptPlace3/](https://mnaei.github.io/PromptPlace3/)
-- **Automated Error Fixing** - The repository includes a system that automatically detects errors in JavaScript code and attempts to fix them
+- **Claude-Powered Error Fixing** - The repository includes a system that automatically detects errors in JavaScript code and uses Claude AI to intelligently fix them
 
-## How the Auto-Fix System Works
+## How the Claude-Powered Auto-Fix System Works
 
 1. **Error Detection**: When tests run in GitHub Actions, any error output is captured to a file
-2. **Error Parsing**: A JavaScript script parses the error output and identifies common error patterns
-3. **Auto-Fix Logic**: For each detected error, the system applies appropriate fixes based on the error type
-4. **Commit Changes**: If fixes were made, GitHub Actions automatically commits the changes
+2. **Error Parsing**: A JavaScript script parses the error output to identify affected files and error details
+3. **AI-Powered Auto-Fix**: Errors are sent to Claude via API, which analyzes the code context and error messages to generate intelligent fixes
+4. **Commit Changes**: If fixes were made, GitHub Actions automatically commits the changes back to the repository
 
-### Supported Error Types
+### Advantages of Claude-Powered Fixes
 
-- **Syntax Errors**: Missing semicolons, unclosed parentheses/brackets
-- **Reference Errors**: Undefined variables
-- **Type Errors**: Null/undefined object access
+- **Contextual Understanding**: Claude analyzes the entire file and error context, not just predefined patterns
+- **Intelligent Solutions**: Claude can generate sophisticated fixes for complex errors beyond simple pattern matching
+- **Continuous Learning**: The system becomes more effective over time as Claude's capabilities improve
+- **Handles Unknown Errors**: Can attempt fixes for error types it hasn't seen before
 
 ## Testing the System Locally
 
@@ -27,26 +28,35 @@ This repository demonstrates automated error detection and fixing in JavaScript 
    ```
    npm install
    ```
-3. Generate errors by running the buggy code:
+3. Set your Claude API key as an environment variable:
+   ```
+   export CLAUDE_API_KEY="your-api-key"
+   ```
+4. Generate errors by running the buggy code:
    ```
    npm run create-error
    ```
-4. Fix the errors automatically:
+5. Fix the errors using Claude:
    ```
-   npm run fix-errors
+   npm run fix-errors-claude
    ```
-5. Run the tests:
+6. Run the tests:
    ```
    npm test
    ```
 
 ## GitHub Actions Integration
 
-The system is integrated with GitHub Actions, which will automatically run tests on every push or pull request to the master branch. If errors are detected, it will attempt to fix them and commit the changes back to the repository.
+The system is integrated with GitHub Actions, which automatically runs tests on every push or pull request to the master branch. If errors are detected, it sends them to Claude for analysis and intelligent fixes, then commits the changes back to the repository.
+
+To use this in your own GitHub repository:
+1. Add the workflow file and Claude error parser script
+2. Add your Claude API key as a GitHub secret named `CLAUDE_API_KEY`
 
 ## Contributing
 
 Feel free to contribute to this project by:
-1. Adding more error patterns to detect
-2. Improving the auto-fix logic
-3. Adding support for other programming languages
+1. Improving the error detection and parsing
+2. Enhancing the Claude prompt for better results
+3. Extending support to other programming languages
+4. Adding more sophisticated test cases and error scenarios
