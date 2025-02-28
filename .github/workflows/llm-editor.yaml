@@ -1,8 +1,10 @@
-name: LLM Website Editor
+name: LLM Website Editor with Claude Error Handling
 
 on:
   issues:
     types: [labeled]
+  # Enable manual triggering
+  workflow_dispatch:
 
 # Ensure we don't have multiple workflows running in parallel on the same issue
 # This prevents race conditions when multiple issues are created or updated quickly
@@ -12,8 +14,8 @@ concurrency:
 
 jobs:
   process-prompt:
-    # Only run if the issue has the 'prompt' label
-    if: contains(github.event.issue.labels.*.name, 'prompt')
+    # Only run if the issue has the 'prompt' label or if manually triggered
+    if: contains(github.event.issue.labels.*.name, 'prompt') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
     permissions:
@@ -25,7 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1  # Only fetch the latest commit
+          fetch-depth: 0  # Fetch all history for proper error analysis
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,6 +39,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          
+          # Also install Node.js dependencies for error fixing
+          if [ -f "package.json" ]; then
+            npm install
+          fi
       
       - name: Run LLM Editor Script
         id: editor
@@ -47,6 +54,73 @@ jobs:
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+      
+      # New step: Test for JavaScript errors
+      - name: Test for errors
+        id: run_tests
+        continue-on-error: true
+        run: |
+          # If we have JavaScript files in the project
+          if [ -f "package.json" ]; then
+            # Run tests and capture output
+            OUTPUT=$(npm test 2>&1) || {
+              echo "has_errors=true" >> $GITHUB_OUTPUT
+              echo "$OUTPUT" > error_output.txt
+            }
+          else
+            echo "No JavaScript tests to run"
+          fi
+
+      # New step: Fix errors with Claude
+      - name: Fix errors with Claude
+        if: steps.run_tests.outputs.has_errors == 'true'
+        env:
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        run: |
+          # Run the Claude-powered error parser script
+          node .github/scripts/claude-error-parser.js
+      
+      # New step: Commit fixes if any were made
+      - name: Commit Claude fixes
+        if: steps.run_tests.outputs.has_errors == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name 'Claude Auto-Fix Bot'
+          git config --global user.email 'claude-bot@anthropic.com'
+          git add .
+          git diff --staged --quiet || {
+            git commit -m "Auto-fix: Resolved issues using Claude's suggestions"
+            git push https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:${GITHUB_REF#refs/heads/}
+          }
+      
+      # Report Claude fixes in the issue comment
+      - name: Report Claude fixes
+        if: github.event_name == 'issues' && steps.run_tests.outputs.has_errors == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 Claude Auto-Fix Applied
+
+              After making the requested changes, some errors were detected in the code.
+              Claude AI analyzed these errors and automatically fixed them.
+              
+              <details>
+              <summary>View details of the fixes</summary>
+              
+              \`\`\`
+              ${require('fs').readFileSync('error_output.txt', 'utf8')}
+              \`\`\`
+              
+              </details>
+              
+              The fixes have been committed to the repository.`
+            })
       
       - name: Handle script failure
         if: failure() && steps.editor.outcome == 'failure'
